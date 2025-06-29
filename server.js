@@ -18,7 +18,6 @@ app.post("/webhook", async (req, res) => {
   // Log the incoming webhook message
   console.log("Incoming webhook message:", JSON.stringify(req.body, null, 2));
 
-  // --- Cascade Edit: Forward the entire payload to n8n ---
   // Check if the n8n webhook URL is configured in your .env file
   if (N8N_WEBHOOK_URL) {
     axios({
@@ -37,17 +36,12 @@ app.post("/webhook", async (req, res) => {
   } else {
     console.log("N8N_WEBHOOK_URL not set in .env file. Skipping forwarding.");
   }
-  // --- End of Cascade Edit ---
-
-  // The original echo and mark-as-read logic has been removed.
-  // All logic should now be handled in your n8n workflow.
 
   // Respond to Meta to acknowledge receipt of the webhook
   res.sendStatus(200);
 });
 
 // Accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
-// info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
