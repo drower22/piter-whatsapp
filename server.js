@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -11,58 +11,42 @@ import axios from "axios";
 const app = express();
 app.use(express.json());
 
-const { WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, PORT } = process.env;
+// Import environment variables
+const { WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, PORT, N8N_WEBHOOK_URL } = process.env;
 
 app.post("/webhook", async (req, res) => {
-  // log incoming messages
+  // Log the incoming webhook message
   console.log("Incoming webhook message:", JSON.stringify(req.body, null, 2));
 
-  // check if the webhook request contains a message
-  // details on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
-  const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
-
-  // check if the incoming message contains text
-  if (message?.type === "text") {
-    // extract the business number to send the reply from it
-    const business_phone_number_id =
-      req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
-
-    // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
-    await axios({
-      method: "POST",
-      url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
-      headers: {
-        Authorization: `Bearer ${GRAPH_API_TOKEN}`,
-      },
-      data: {
-        messaging_product: "whatsapp",
-        to: message.from,
-        text: { body: "Echo: " + message.text.body },
-        context: {
-          message_id: message.id, // shows the message as a reply to the original user message
-        },
-      },
+  // --- Cascade Edit: Forward the entire payload to n8n ---
+  // Check if the n8n webhook URL is configured in your .env file
+  if (N8N_WEBHOOK_URL) {
+    axios({
+      method: "post",
+      url: N8N_WEBHOOK_URL,
+      data: req.body,
+      headers: { "Content-Type": "application/json" },
+    })
+    .then(function (response) {
+      console.log("Payload forwarded to n8n successfully.");
+    })
+    .catch(function (error) {
+      // Log the error but don't stop the process
+      console.error("Error forwarding to n8n:", error.message);
     });
-
-    // mark incoming message as read
-    await axios({
-      method: "POST",
-      url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
-      headers: {
-        Authorization: `Bearer ${GRAPH_API_TOKEN}`,
-      },
-      data: {
-        messaging_product: "whatsapp",
-        status: "read",
-        message_id: message.id,
-      },
-    });
+  } else {
+    console.log("N8N_WEBHOOK_URL not set in .env file. Skipping forwarding.");
   }
+  // --- End of Cascade Edit ---
 
+  // The original echo and mark-as-read logic has been removed.
+  // All logic should now be handled in your n8n workflow.
+
+  // Respond to Meta to acknowledge receipt of the webhook
   res.sendStatus(200);
 });
 
-// accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
+// Accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
 // info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
