@@ -1,10 +1,44 @@
-# WhatsApp Platform Quick Start
+# WhatsApp Official API - Vercel Production Setup
 
-Welcome to your first step toward building awesome WhatsApp apps!
+Este projeto está pronto para ser hospedado na Vercel como uma API serverless, utilizando o token oficial da Meta para integração com o WhatsApp Business Cloud API.
 
-This project contains the code for a simple webhook you can use to get started using the WhatsApp Platform.
+## Estrutura do Projeto
 
-The code here mirrors what is in our [webhook set up guide](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks), and may be used as the starting point for doing the ["Get Started With the WhatsApp Business Cloud API guide"](https://developers.facebook.com/docs/whatsapp/getting-started/signing-up/).
+- `api/index.js`: Handler Express para rotas `/webhook` e `/` (compatível com Vercel)
+- `server.js`: Versão local (não usada em produção Vercel)
+- `.env`: Variáveis de ambiente (NÃO subir para o repositório público)
+
+## Deploy na Vercel
+
+1. Faça login em https://vercel.com/ e importe este repositório.
+2. Certifique-se de que o diretório `api/` está presente na raiz do projeto.
+3. No painel da Vercel, vá em **Settings > Environment Variables** e configure:
+   - `WEBHOOK_VERIFY_TOKEN`: Token de verificação do webhook (use o mesmo cadastrado no painel Meta)
+   - `GRAPH_API_TOKEN`: Token oficial da Meta (NUNCA exponha este valor em logs)
+   - `N8N_WEBHOOK_URL`: (opcional) URL para encaminhar payloads recebidos
+4. Deploy! A Vercel irá expor uma URL do tipo `https://<project>.vercel.app/webhook` para configurar no painel da Meta.
+
+## Configurando o Webhook na Meta
+
+1. No painel do app em https://developers.facebook.com/:
+   - Vá em **WhatsApp > Configuration > Webhooks**
+   - Adicione a URL gerada pela Vercel com `/webhook` ao final
+   - Use o mesmo valor de `WEBHOOK_VERIFY_TOKEN` para verificação
+   - Selecione o campo **messages**
+2. Pronto! Seu endpoint está pronto para receber eventos do WhatsApp Cloud API.
+
+## Segurança
+- Nunca exponha ou logue tokens sensíveis.
+- Assegure que apenas URLs HTTPS sejam usadas em produção.
+
+## Desenvolvimento Local
+- Use `server.js` para testes locais, rodando `npm install` e `npm start`.
+- Em produção (Vercel), apenas `api/index.js` será usado.
+
+## Dúvidas?
+Consulte a documentação oficial:
+- [Webhook set up guide](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks)
+- [WhatsApp Business Platform Documentation](https://developers.facebook.com/docs/whatsapp/)
 
 ## Additional Resources
 

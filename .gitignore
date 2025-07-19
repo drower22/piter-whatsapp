@@ -1,0 +1,13 @@
+# Node
+node_modules/
+.env
+.pnpm-store/
+*.log
+*.tmp
+
+# Vercel
+.vercel/
+
+# System
+.DS_Store
+Thumbs.db

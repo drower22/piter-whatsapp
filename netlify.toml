@@ -1,0 +1,4 @@
+# Placeholder for deployment config. Not used by Vercel, but required by deploy system.
+[build]
+  command = ""
+  publish = "api"
