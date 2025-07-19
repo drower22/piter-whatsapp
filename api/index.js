@@ -1,5 +1,7 @@
 import express from "express";
 import axios from "axios";
+import { addLog } from "./logs.js";
+import logsUi from "./logs-ui.js";
 
 const app = express();
 app.use(express.json());
@@ -7,7 +9,8 @@ app.use(express.json());
 const { WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, N8N_WEBHOOK_URL } = process.env;
 
 app.post("/webhook", async (req, res) => {
-  // Log ONLY basic info about incoming webhook
+  // Log basic info and store in-memory
+  addLog("Webhook recebido: " + JSON.stringify(req.body));
   console.log("Incoming webhook message received");
 
   if (N8N_WEBHOOK_URL) {
@@ -45,8 +48,10 @@ app.get("/webhook", (req, res) => {
   }
 });
 
+app.use(logsUi);
+
 app.get("/", (req, res) => {
-  res.send(`<pre>Nothing to see here.\nCheckout README.md to start.</pre>`);
+  res.send(`<pre>API WhatsApp pronta.\nVeja /logs para visualizar os logs.</pre>`);
 });
 
 // Export the handler for Vercel
