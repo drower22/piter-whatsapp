@@ -1,4 +1,6 @@
 // api/webhook.js - Handler compatível com Vercel API Routes
+import axios from "axios";
+
 export default async function handler(req, res) {
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -10,11 +12,20 @@ export default async function handler(req, res) {
       res.status(403).send("Forbidden");
     }
   } else if (req.method === "POST") {
-    // Log simples para debug
-    console.log("[EVENTO] POST /webhook recebido:", JSON.stringify(req.body));
-    // Aqui você pode encaminhar para o n8n se quiser
-    res.status(200).send("EVENT RECEIVED");
+    // Encaminhar para o n8n
+    try {
+      if (process.env.N8N_WEBHOOK_URL) {
+        await axios.post(process.env.N8N_WEBHOOK_URL, req.body, {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      res.status(200).send("EVENT RECEIVED");
+    } catch (err) {
+      console.error("Erro ao encaminhar para n8n:", err.message);
+      res.status(500).send("Erro ao encaminhar para n8n");
+    }
   } else {
     res.status(405).send("Method Not Allowed");
   }
 }
+
