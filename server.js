@@ -13,39 +13,38 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use(express.static(path.join(__dirname, "public")));
 
+// Crie o app antes de usar app.use
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// Log inicial de status do servidor
+addLog('[INFO] Servidor e logs ativos. Integração iniciada com sucesso.');
+console.log('[INFO] Servidor e logs ativos. Integração iniciada com sucesso.');
 
 // Import environment variables
 const { WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, PORT, N8N_WEBHOOK_URL } = process.env;
 
 app.post("/webhook", async (req, res) => {
-  // Log também no in-memory
-  addLog("Webhook recebido: " + JSON.stringify(req.body));
-  console.log("Incoming webhook message:", JSON.stringify(req.body, null, 2));
-
-  // Check if the n8n webhook URL is configured in your .env file
-  if (N8N_WEBHOOK_URL) {
-    axios({
-      method: "post",
-      url: N8N_WEBHOOK_URL,
-      data: req.body,
-      headers: { "Content-Type": "application/json" },
-    })
-    .then(function (response) {
-      console.log("Payload forwarded to n8n successfully.");
-    })
-    .catch(function (error) {
-      // Log the error but don't stop the process
-      console.error("Error forwarding to n8n:", error.message);
-    });
+  const payload = JSON.stringify(req.body);
+  addLog(`[EVENTO] POST /webhook recebido: ${payload}`);
+  console.log(`[EVENTO] POST /webhook recebido: ${payload}`);
+  if (process.env.N8N_WEBHOOK_URL) {
+    try {
+      const n8nResponse = await axios.post(process.env.N8N_WEBHOOK_URL, req.body, {
+        headers: { "Content-Type": "application/json" }
+      });
+      addLog(`[N8N] Encaminhado para n8n. Status: ${n8nResponse.status}`);
+      console.log(`[N8N] Encaminhado para n8n. Status: ${n8nResponse.status}`);
+    } catch (err) {
+      addLog(`[N8N] Erro ao encaminhar para n8n: ${err.message}`);
+      console.log(`[N8N] Erro ao encaminhar para n8n: ${err.message}`);
+    }
   } else {
-    console.log("N8N_WEBHOOK_URL not set in .env file. Skipping forwarding.");
+    addLog("[N8N] N8N_WEBHOOK_URL não configurado. Não encaminhou.");
+    console.log("[N8N] N8N_WEBHOOK_URL não configurado. Não encaminhou.");
   }
-
-  // Respond to Meta to acknowledge receipt of the webhook
   res.sendStatus(200);
 });
 
@@ -54,14 +53,16 @@ app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-
-  // check the mode and token sent are correct
+  const logMsg = `[VALIDAÇÃO] GET /webhook?mode=${mode}&token=${token}&challenge=${challenge}`;
+  addLog(logMsg);
+  console.log(logMsg);
   if (mode === "subscribe" && token === WEBHOOK_VERIFY_TOKEN) {
-    // respond with 200 OK and challenge token from the request
+    addLog("[VALIDAÇÃO] Sucesso: token correto, respondendo challenge");
+    console.log("[VALIDAÇÃO] Sucesso: token correto, respondendo challenge");
     res.status(200).send(challenge);
-    console.log("Webhook verified successfully!");
   } else {
-    // respond with '403 Forbidden' if verify tokens do not match
+    addLog("[VALIDAÇÃO] Falha: token incorreto ou parâmetros inválidos");
+    console.log("[VALIDAÇÃO] Falha: token incorreto ou parâmetros inválidos");
     res.sendStatus(403);
   }
 });
