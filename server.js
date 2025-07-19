@@ -7,6 +7,13 @@
 
 import express from "express";
 import axios from "axios";
+import { addLog } from "./api/logs.js";
+import logsUi from "./api/logs-ui.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, "public")));
 
 const app = express();
 app.use(express.json());
@@ -15,7 +22,8 @@ app.use(express.json());
 const { WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, PORT, N8N_WEBHOOK_URL } = process.env;
 
 app.post("/webhook", async (req, res) => {
-  // Log the incoming webhook message
+  // Log também no in-memory
+  addLog("Webhook recebido: " + JSON.stringify(req.body));
   console.log("Incoming webhook message:", JSON.stringify(req.body, null, 2));
 
   // Check if the n8n webhook URL is configured in your .env file
@@ -58,9 +66,13 @@ app.get("/webhook", (req, res) => {
   }
 });
 
+app.use(logsUi);
+
 app.get("/", (req, res) => {
-  res.send(`<pre>Nothing to see here.
-Checkout README.md to start.</pre>`);
+  res.send(`<pre>API WhatsApp pronta.\nVeja /logs para visualizar os logs.</pre>`);
 });
 
-// Removido para Vercel: a Vercel gerencia o servidor automaticamente.
+const port = PORT || 4000;
+app.listen(port, () => {
+  console.log(`Server is listening on port: ${port}`);
+});
